@@ -2,7 +2,7 @@ import bpy
 
 from . import export as pb_export
 
-ADDON_VERSION = "0.13.1"
+ADDON_VERSION = "0.14.0"
 
 
 class PB_PT_main(bpy.types.Panel):
@@ -79,7 +79,9 @@ class PB_PT_main(bpy.types.Panel):
 
         box = layout.box()
         box.label(text="Prepare Module (for library)")
-        box.prop(props, "module_role")
+        row = box.row(align=True)
+        row.prop(props, "module_role")
+        row.prop(props, "module_variant", text="")
         box.prop(props, "module_style")
         box.operator("pb.set_module_name", text="Set Module Name")
 

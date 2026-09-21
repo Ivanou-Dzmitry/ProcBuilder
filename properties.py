@@ -115,6 +115,18 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
             ('underground', "Underground", ""),
         ],
     )
+    module_variant: bpy.props.EnumProperty(
+        name="Variant",
+        description="Optional variant tag appended to the style, so alternative swappable "
+                    "modules for the same Role+Style get a readable collection name instead "
+                    "of Blender's meaningless .001/.002 suffix",
+        items=[
+            ('None', "Plain", ""),
+            ('Win', "Window", ""),
+            ('Door', "Door", ""),
+            ('Corner', "Corner", ""),
+        ],
+    )
     module_style: bpy.props.StringProperty(
         name="Style",
         description="Style name shared by this module's bottom/middle/top/balcony set",

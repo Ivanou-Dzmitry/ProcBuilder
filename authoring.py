@@ -41,6 +41,8 @@ class PB_OT_set_module_name(bpy.types.Operator):
         if not style:
             self.report({'ERROR'}, "Enter a style name first")
             return {'CANCELLED'}
+        if props.module_variant != 'None':
+            style = f"{style}_{props.module_variant}"
 
         target_name = f"PB_{props.module_role}_{style}"
         selected_set = set(objs)

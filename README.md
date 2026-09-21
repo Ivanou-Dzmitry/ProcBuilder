@@ -95,14 +95,21 @@ bounding box's, that anchors the wall to the grid.
 
 The **Prepare Module (for library)** section automates the naming
 convention: select the object(s) making up one module, pick a *Role*
-(bottom/middle/top/balcony/roof/underground) and type a *Style*, then click
+(bottom/middle/top/balcony/roof/underground), an optional *Variant* right
+next to it (Plain/Window/Door/Corner), and type a *Style*, then click
 **Set Module Name** — it renames (or creates) the collection as
-`PB_<role>_<style>` for you. **Each call creates its own collection**, even
-with the same Role/Style (Blender auto-suffixes with `.001`, `.002`... on a
-name clash) - this matters because if wall/window/door for the same band
-are meant to be *alternative* swappable variants (you pick which one sits
-at a given spot via Swap), they must live in separate collections. Merging
-them into one would place all of them at once at every spot, and Swap would
+`PB_<role>_<style>` (or `PB_<role>_<style>_<variant>` when Variant isn't
+Plain) for you. *Variant* exists so alternative swappable modules for the
+same Role+Style - a plain wall vs. one with a window vs. one with a door,
+picked between via Swap at the same spot - get a readable collection name
+(`PB_bottom_t01_Win`, `PB_bottom_t01_Door`) instead of Blender's meaningless
+`.001`/`.002` auto-suffix. **Each call creates its own collection**, even
+with the same Role/Style/Variant (Blender auto-suffixes with `.001`,
+`.002`... on a name clash) - this matters because if wall/window/door for
+the same band are meant to be *alternative* swappable variants (you pick
+which one sits at a given spot via Swap), they must live in separate
+collections. Merging them into one would place all of them at once at every
+spot, and Swap would
 only ever offer that one merged option.
 
 Object names inside a module follow `<collection name, band abbreviated>.
