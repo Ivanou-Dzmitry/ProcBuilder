@@ -213,10 +213,11 @@ two arms can reuse the exact same "front face at local Y=0, facing local
    of relying on the addon to rotate it separately, since the whole corner
    object only gets ONE rotation). Position it extending along local **-Y**
    for one *Module Size* from the origin.
-3. Join both arms into one object/collection. The origin - the shared
-   corner point of both arms - must sit exactly on the outer grid corner
-   point, at the base (Z=0): unlike straight wall cells, no bounding-box
-   centering is applied to corner modules, the origin is trusted as-is.
+3. Join both arms into one object/collection. The point where both arms
+   meet - their shared corner point, in the library file's world
+   coordinates - must sit exactly on the outer grid corner point, at the
+   base (Z=0): unlike straight wall cells, no bounding-box centering is
+   applied to corner modules, that point is trusted as-is.
 4. **Set Module Name** with Role = `Bottom Corner` (or `Middle Corner`),
    Variant = `Plain`, same Style as the rest of that style's modules -
    produces `PB_bottomcorner_<Style>` (or `PB_middlecorner_<Style>`).
@@ -226,7 +227,30 @@ The addon rotates this one authored piece by 0°/90°/180°/270° to cover all
 band, not four times. Don't confuse this with the *Variant* dropdown's
 `Corner` option (see above) - that's just a naming tag for an alternative
 *swappable* module and produces a completely different, unrelated style
-name; the real corner module goes through *Role*, not *Variant*.
+name; the real corner module goes through *Role*, not *Variant*. **Variant
+is automatically ignored (and greyed out) whenever Role is Bottom Corner/
+Middle Corner** - it's a persistent field that doesn't reset itself, so
+without this a leftover `Corner` value from a previous module could
+silently split the corner module off into its own unmatched style
+(`PB_bottomcorner_t01_Corner` instead of `PB_bottomcorner_t01`); now it
+can't happen regardless of what Variant is set to.
+
+**If the corner ends up in the wrong place** (floating off to one side,
+near the middle of a wall, etc.) it's almost always the collection's own
+**Instance Offset**, not the object's origin marker in the viewport (that
+marker just shows the object's own position - what actually matters for
+instancing is the collection's Instance Offset, a separate property under
+Object Properties → Collection → Instance Offset when the collection is
+active in the Outliner). Creating a collection via the viewport's *Move to
+Collection → New Collection* sets Instance Offset to wherever the 3D
+cursor happened to be at that moment - if it wasn't sitting exactly on the
+corner point (e.g. left over from an earlier modeling step), the whole
+corner module shifts by that offset. The addon compensates for whatever
+Instance Offset a corner collection has (same as it already did for
+straight walls), so this shouldn't need a manual fix - but if you'd rather
+zero it out anyway: snap the 3D cursor to the corner vertex (`Shift+S` →
+Cursor to Selected) and right-click the collection in the Outliner → **Set
+Instance Offset**.
 
 Corner slots participate in swap-preservation and the "Last build"/
 "Estimate" triangle counts exactly like straight wall slots, and were

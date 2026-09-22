@@ -41,7 +41,12 @@ class PB_OT_set_module_name(bpy.types.Operator):
         if not style:
             self.report({'ERROR'}, "Enter a style name first")
             return {'CANCELLED'}
-        if props.module_variant != 'None':
+        # Corner roles are a single dedicated piece per style, not a swap-alternative variant
+        # like plain/window/door - Variant is ignored for them so a stale leftover value (it's
+        # a persistent field, easy to forget it's still set from an earlier module) can't
+        # silently split the corner module off into its own unmatched "style".
+        is_corner_role = props.module_role in ('bottomcorner', 'middlecorner')
+        if props.module_variant != 'None' and not is_corner_role:
             style = f"{style}_{props.module_variant}"
 
         target_name = f"PB_{props.module_role}_{style}"

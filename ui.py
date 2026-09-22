@@ -3,7 +3,7 @@ import bpy
 from . import export as pb_export
 from . import generator as pb_generator
 
-ADDON_VERSION = "0.18.0"
+ADDON_VERSION = "0.18.2"
 
 
 class PB_PT_main(bpy.types.Panel):
@@ -96,7 +96,10 @@ class PB_PT_main(bpy.types.Panel):
         box.label(text="Prepare Module (for library)")
         row = box.row(align=True)
         row.prop(props, "module_role")
-        row.prop(props, "module_variant", text="")
+        is_corner_role = props.module_role in ('bottomcorner', 'middlecorner')
+        sub = row.row(align=True)
+        sub.enabled = not is_corner_role
+        sub.prop(props, "module_variant", text="")
         box.prop(props, "module_style")
         box.operator("pb.set_module_name", text="Set Module Name")
 

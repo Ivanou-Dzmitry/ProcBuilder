@@ -251,16 +251,27 @@ def _perimeter_walk_no_corners(size_x, size_y):
         yield (0, j, 'W')
 
 
-def _corner_location(corner_id, size_x, size_y, module_size, extend_x, extend_y, z):
+def _corner_anchor(collection):
+    """(x, y) correction for the collection's own Instance Offset, so the point where the
+    module's two arms meet - modeled at local (0, 0, 0) per CORNER_ROTATION's authoring
+    convention - lands exactly on the grid corner point no matter where Blender happened to
+    put the collection's Instance Offset (it isn't always (0,0,0) - e.g. it defaults to the
+    3D cursor's position when a collection is created via the 3D viewport's "Move to
+    Collection > New Collection"). Same idea as _module_anchor for straight walls, just
+    without bbox-based X-centering - a corner module doesn't have a natural "center"."""
+    offset = collection.instance_offset
+    return (-offset.x, -offset.y)
+
+
+def _corner_location(corner_id, size_x, size_y, module_size, extend_x, extend_y, z, anchor):
     """World location for a dedicated corner module - placed exactly at the outer grid
-    corner point. Unlike a straight wall cell, no bbox/anchor adjustment is applied: the
-    module's own origin IS the corner point, by the same convention as authoring it directly
-    for that corner (see CORNER_ROTATION)."""
+    corner point, corrected for the collection's Instance Offset (see _corner_anchor)."""
     total_x = size_x * module_size
     total_y = size_y * module_size
     x = _axis_near(extend_x, total_x) if corner_id in ('SW', 'NW') else _axis_far(extend_x, total_x)
     y = _axis_near(extend_y, total_y) if corner_id in ('SW', 'SE') else _axis_far(extend_y, total_y)
-    return (x, y, z)
+    anchor_x, anchor_y = _rotate_xy(anchor[0], anchor[1], CORNER_ROTATION[corner_id])
+    return (x - anchor_x, y - anchor_y, z)
 
 
 def _local_pos(i, j, side):
@@ -520,9 +531,10 @@ class PB_OT_generate_building(bpy.types.Operator):
                     module_collection = _resolve_collection(
                         library, filepath, corner_default_collection, saved_name,
                     )
+                    anchor = _corner_anchor(module_collection)
                     location = _corner_location(
                         corner_id, props.size_x, props.size_y, props.module_size,
-                        props.extend_x, props.extend_y, z,
+                        props.extend_x, props.extend_y, z, anchor,
                     )
                     name = f"PB_corner_f{floor_index}_{corner_id}"
                     obj = _make_instance(
