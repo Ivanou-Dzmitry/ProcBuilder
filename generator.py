@@ -18,6 +18,30 @@ SIDE_ROTATION = {
 # by the addon; this Z-rotation just picks which grid axis the tile's "grain" runs along.
 ROOF_GRAIN_ROTATION = {'X': 0.0, 'Y': 90.0}
 
+# (triangle_count, vertex_count) per module collection, keyed by collection name - modules
+# don't change shape at runtime, so this avoids re-walking every mesh on every UI redraw.
+_MESH_STATS_CACHE = {}
+
+
+def _mesh_stats(collection):
+    """(triangle_count, vertex_count) for one module collection's mesh geometry, cached by
+    collection name."""
+    cached = _MESH_STATS_CACHE.get(collection.name)
+    if cached is not None:
+        return cached
+    tris = 0
+    verts = 0
+    for obj in collection.all_objects:
+        if obj.type != 'MESH' or obj.data is None:
+            continue
+        mesh = obj.data
+        mesh.calc_loop_triangles()
+        tris += len(mesh.loop_triangles)
+        verts += len(mesh.vertices)
+    stats = (tris, verts)
+    _MESH_STATS_CACHE[collection.name] = stats
+    return stats
+
 
 def _collection_bounds(collection):
     """Bounding box (min, max) of a module collection's mesh geometry, relative to its
@@ -75,13 +99,19 @@ def _roof_anchor(collection):
     return Vector(((min_v.x + max_v.x) / 2.0, 0.0, (min_v.z + max_v.z) / 2.0))
 
 
-def _roof_cell_transform(i, j, anchor, roof_z, module_size, grain_deg):
+def _roof_cell_transform(i, j, anchor, roof_z, module_size, grain_deg, size_x, size_y, extend_x, extend_y):
     """Tip a wall-authored module flat (its front face ends up pointing +Z, visible from
     above) and place it to fill roof grid cell (i, j), with a Z-rotation for grain direction."""
     tip = Matrix.Rotation(math.radians(90.0), 3, 'X')
     grain = Matrix.Rotation(math.radians(grain_deg), 3, 'Z')
     rot3 = grain @ tip
-    target = Vector(((i + 0.5) * module_size, (j + 0.5) * module_size, roof_z))
+    total_x = size_x * module_size
+    total_y = size_y * module_size
+    target = Vector((
+        _axis_along(i, module_size, extend_x, total_x),
+        _axis_along(j, module_size, extend_y, total_y),
+        roof_z,
+    ))
     location = target - (rot3 @ anchor)
     return tuple(location), tuple(rot3.to_euler('XYZ'))
 
@@ -92,45 +122,61 @@ def _rotate_xy(x, y, degrees):
     return (x * c - y * s, x * s + y * c)
 
 
-def _cell_location(i, j, side, size_x, size_y, anchor, z, module_size):
+def _axis_along(k, module_size, extend, total):
+    """World coordinate of cell index k, measured along one axis (i for S/N walls and roof
+    tiles' X; j for E/W walls and roof tiles' Y), honoring that axis's extend direction.
+
+    POS and NEG are mirror images of each other and, on purpose, do NOT depend on `total`
+    (the current size along this axis) - cell k always sits the same distance from its own
+    anchor edge no matter how much the building has grown, so growing only ever appends cells
+    past the far end instead of shifting the ones that already exist. CENTER is the one mode
+    that's supposed to be total-dependent: growing means splitting the new length equally onto
+    both ends, which necessarily shifts every existing cell inward/outward a bit - that's the
+    intended behavior of Center, not a bug."""
+    if extend == 'NEG':
+        return -(k + 0.5) * module_size
+    natural = (k + 0.5) * module_size
+    if extend == 'CENTER':
+        return natural - total / 2.0
+    return natural  # 'POS'
+
+
+def _axis_near(extend, total):
+    """World coordinate of this axis's 'near' boundary - where the W wall's X (or S wall's Y)
+    sits. See _axis_along for why POS/NEG are total-independent and CENTER isn't."""
+    if extend == 'NEG':
+        return -total
+    if extend == 'CENTER':
+        return -total / 2.0
+    return 0.0
+
+
+def _axis_far(extend, total):
+    """World coordinate of this axis's 'far' boundary - where the E wall's X (or N wall's Y)
+    sits. See _axis_along for why POS/NEG are total-independent and CENTER isn't."""
+    if extend == 'NEG':
+        return 0.0
+    if extend == 'CENTER':
+        return total / 2.0
+    return total
+
+
+def _cell_location(i, j, side, size_x, size_y, anchor, z, module_size, extend_x, extend_y):
     """World location for a perimeter-cell instance so its front face and width-center
     land exactly on the grid, no matter where the module's own origin is."""
+    total_x = size_x * module_size
+    total_y = size_y * module_size
     if side == 'S':
-        target = ((i + 0.5) * module_size, 0.0)
+        target = (_axis_along(i, module_size, extend_x, total_x), _axis_near(extend_y, total_y))
     elif side == 'N':
-        target = ((i + 0.5) * module_size, size_y * module_size)
+        target = (_axis_along(i, module_size, extend_x, total_x), _axis_far(extend_y, total_y))
     elif side == 'E':
-        target = (size_x * module_size, (j + 0.5) * module_size)
+        target = (_axis_far(extend_x, total_x), _axis_along(j, module_size, extend_y, total_y))
     else:  # 'W'
-        target = (0.0, (j + 0.5) * module_size)
+        target = (_axis_near(extend_x, total_x), _axis_along(j, module_size, extend_y, total_y))
 
     anchor_x, anchor_y = _rotate_xy(anchor[0], anchor[1], SIDE_ROTATION[side])
     return (target[0] - anchor_x, target[1] - anchor_y, z)
-
-
-def _footprint_offset(extend_x, extend_y, size_x, size_y, module_size):
-    """World-space (x, y) offset applied uniformly to every placed cell, so the footprint
-    grows in whichever direction the user picked for each axis independently, instead of
-    always growing +X/+Y.
-
-    This only ever shifts the WHOLE building - it never touches the internal (i, j) grid or
-    perimeter-walk numbering, so slot keys (floor_index, side, local_pos) used by swap
-    preservation stay stable across a resize regardless of the chosen direction."""
-    width = size_x * module_size
-    depth = size_y * module_size
-    if extend_x == 'NEG':
-        offset_x = -width
-    elif extend_x == 'CENTER':
-        offset_x = -width / 2.0
-    else:  # 'POS', the default
-        offset_x = 0.0
-    if extend_y == 'NEG':
-        offset_y = -depth
-    elif extend_y == 'CENTER':
-        offset_y = -depth / 2.0
-    else:  # 'POS', the default
-        offset_y = 0.0
-    return (offset_x, offset_y)
 
 
 def _floor_z_positions(floors, module_height, bottom_height):
@@ -175,6 +221,49 @@ def _band_for_floor(floor_index, floors):
     if floor_index == floors - 1:
         return 'top'
     return 'middle'
+
+
+def estimate_stats(props):
+    """Predict (instance_count, triangle_count, vertex_count) for the CURRENT Generate
+    settings without building anything - lets the panel show a live estimate as Length/
+    Width/Floors/etc change, before the user commits to a (Re)generate. Returns None if the
+    library/style isn't resolvable yet (no library set, style has no bottom module, ...)."""
+    from . import library
+
+    filepath = bpy.path.abspath(props.library_path) if props.library_path else ""
+    if not filepath:
+        return None
+    styles = library.scan_library(filepath)
+    band_map = styles.get(props.style)
+    if not band_map or 'bottom' not in band_map:
+        return None
+
+    wall_cells_per_floor = 2 * (props.size_x + props.size_y)
+    band_counts = {}
+    if props.include_underground and 'underground' in band_map:
+        band_counts['underground'] = band_counts.get('underground', 0) + wall_cells_per_floor
+    for floor_index in range(props.floors):
+        band = _band_for_floor(floor_index, props.floors)
+        if band not in band_map:
+            band = 'bottom'
+        band_counts[band] = band_counts.get(band, 0) + wall_cells_per_floor
+    if props.include_roof and 'roof' in band_map:
+        band_counts['roof'] = band_counts.get('roof', 0) + props.size_x * props.size_y
+
+    total_tris = 0
+    total_verts = 0
+    for band, count in band_counts.items():
+        coll_name = band_map.get(band)
+        if coll_name is None:
+            continue
+        collection = library.ensure_collection_linked(filepath, coll_name)
+        if collection is None:
+            continue
+        tris, verts = _mesh_stats(collection)
+        total_tris += tris * count
+        total_verts += verts * count
+
+    return sum(band_counts.values()), total_tris, total_verts
 
 
 def _clear_existing_building():
@@ -262,6 +351,10 @@ class PB_OT_generate_building(bpy.types.Operator):
             self.report({'ERROR'}, f"Style '{props.style}' has no PB_bottom_ module in the library")
             return {'CANCELLED'}
 
+        previous_root = bpy.data.objects.get(BUILDING_ROOT_NAME)
+        previous_tris = previous_root.get('pb_last_tris') if previous_root else None
+        previous_verts = previous_root.get('pb_last_verts') if previous_root else None
+
         wall_swaps, roof_swaps, balcony_snapshots = _snapshot_building_state()
         _clear_existing_building()
 
@@ -279,8 +372,6 @@ class PB_OT_generate_building(bpy.types.Operator):
         perimeter_cells = list(_perimeter_walk(props.size_x, props.size_y))
         missing_bands = set()
         wall_by_slot = {}
-        offset_x, offset_y = _footprint_offset(
-            props.extend_x, props.extend_y, props.size_x, props.size_y, props.module_size)
 
         # The ground floor is often taller than the rest (real buildings do this a lot) - so
         # its stacking height is the module's own ACTUAL modeled height, measured from its
@@ -330,8 +421,8 @@ class PB_OT_generate_building(bpy.types.Operator):
                 z = floor_z_positions[floor_index] if floor_index >= 0 else 0.0
                 location = _cell_location(
                     i, j, side, props.size_x, props.size_y, anchor, z, props.module_size,
+                    props.extend_x, props.extend_y,
                 )
-                location = (location[0] + offset_x, location[1] + offset_y, location[2])
                 if band == 'underground':
                     # Independent, user-set depth (not module_height) so one underground
                     # module can flex to bury the base into uneven terrain.
@@ -414,8 +505,8 @@ class PB_OT_generate_building(bpy.types.Operator):
                         anchor3d = _roof_anchor(roof_collection)
                         location, rotation_euler = _roof_cell_transform(
                             i, j, anchor3d, roof_z, props.module_size, grain_deg,
+                            props.size_x, props.size_y, props.extend_x, props.extend_y,
                         )
-                        location = (location[0] + offset_x, location[1] + offset_y, location[2])
                         _make_instance(
                             f"PB_roof_{roof_index}",
                             roof_collection,
@@ -432,6 +523,39 @@ class PB_OT_generate_building(bpy.types.Operator):
                 {'WARNING'},
                 f"Style '{props.style}' is missing module(s) for: {', '.join(sorted(missing_bands))}",
             )
+
+        role_counts = {'wall': 0, 'balcony': 0, 'roof': 0}
+        collection_counts = {}
+        for obj in building_collection.objects:
+            role = obj.get('pb_role')
+            if role in role_counts:
+                role_counts[role] += 1
+            if obj.instance_collection is not None:
+                collection_counts[obj.instance_collection] = (
+                    collection_counts.get(obj.instance_collection, 0) + 1
+                )
+        total_tris = 0
+        total_verts = 0
+        for collection, count in collection_counts.items():
+            tris, verts = _mesh_stats(collection)
+            total_tris += tris * count
+            total_verts += verts * count
+
+        root['pb_last_tris'] = total_tris
+        root['pb_last_verts'] = total_verts
+
+        total_instances = sum(role_counts.values())
+        delta = ""
+        if previous_tris is not None:
+            diff = total_tris - previous_tris
+            delta = f" (was {previous_tris:,} → {diff:+,})"
+        print(
+            f"[ProcBuilder] Generated '{props.style}' {props.size_x}x{props.size_y}x{props.floors}: "
+            f"{role_counts['wall']} walls, {role_counts['balcony']} balconies, "
+            f"{role_counts['roof']} roof tiles ({total_instances} instances) - "
+            f"~{total_tris:,} triangles{delta}, ~{total_verts:,} vertices "
+            "(exact export count may differ slightly after vertex welding)"
+        )
 
         return {'FINISHED'}
 

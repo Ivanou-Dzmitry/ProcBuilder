@@ -45,14 +45,22 @@ bounding box's, that anchors the wall to the grid.
 1. In the **ProcBuilder** tab of the 3D viewport sidebar, set *Library*
    to your module `.blend` file and pick a *Style*.
 2. Set *Length*, *Width* and *Floors* (module counts), *Extend X*/*Extend Y*
-   (Center by default on both axes - each axis independently picks which way
-   the building grows in world space when Length/Width change: `X+`/`X-`
-   pins the west/east edge in place while the other edge moves, `Y+`/`Y-`
-   does the same for south/north, and `Center` grows symmetrically. The two
-   axes are independent, so e.g. Extend X = Center with Extend Y = `Y-`
-   grows Length symmetrically while Width only extends south. Purely a
-   visual offset of the whole building - it doesn't touch the slot numbering
-   swap-preservation relies on) and *Module Size*/*Module Height* (the
+   (X = Length, Y = Width - shown as a hint under the row. Center by default
+   on both axes - each axis independently picks which way the building grows
+   in world space when Length/Width change: `X+`/`X-` pins the west/east
+   edge in place while the other edge moves, `Y+`/`Y-` does the same for
+   south/north, and `Center` grows symmetrically. The two axes are
+   independent, so e.g. Extend X = Center with Extend Y = `Y-` grows Length
+   symmetrically while Width only extends south. As long as you only change
+   Length/Width/Floors, existing blocks - including swaps and balconies -
+   never move; new modules are only appended at the growing edge. Changing
+   the Extend X/Y setting itself between generates is different: it flips
+   which edge is the growing one, so the whole wall visibly reflects to the
+   other side, carrying existing blocks with it - that's expected, not a
+   bug. `Center` is inherently different too: since it splits growth evenly
+   onto both edges, every existing block shifts a little on every resize by
+   design, whether or not you touch the Extend setting) and *Module Size*/
+   *Module Height* (the
    real-world size of one module in meters — 3m by default; change this if
    your modules aren't 3×3m). The ground floor's own height is auto-measured
    from the `bottom` module's actual bounding box (real buildings often have
@@ -73,6 +81,10 @@ bounding box's, that anchors the wall to the grid.
    together). The roof's height is auto-measured from the actual topmost
    wall band's bounding box, not assumed to equal *Module Height* — handy
    since a parapet/attic top band is often shorter than a normal floor.
+   Above the Generate button, an **"Estimate: N modules, ~X tris, ~Y verts"**
+   label updates live as you change any of the above - a prediction from the
+   library's actual module geometry, so you can gauge scene complexity
+   before committing to a (Re)generate.
 5. Click **Generate**. This builds all 4 walls per floor, each running the
    building's full length/width (floor 0 = bottom band, last floor = top
    band, floors in between = middle band). Corner cells get a module from
@@ -88,7 +100,18 @@ bounding box's, that anchors the wall to the grid.
    one could reshuffle which physical wall a given index pointed to (a swap
    or an attached balcony could visibly jump from, say, the south wall to
    the east wall). Side+position stays tied to the same physical wall
-   regardless of how Length/Width change.
+   regardless of how Length/Width change. Below the button, a **"Last
+   build: ~X tris, ~Y verts"** label shows the actual (not estimated) count
+   for what just got built. The same numbers, broken down by wall/balcony/
+   roof instance counts and the change from the previous build (`was N →
+   +/-M`), are also printed to Blender's **system console** on every
+   Generate/Regenerate (`Window → Toggle System Console` on Windows), e.g.:
+   ```
+   [ProcBuilder] Generated 'Brick01' 5x3x3: 48 walls, 2 balconies, 15 roof
+   tiles (65 instances) - ~12,400 triangles (was 9,800 → +2,600),
+   ~6,800 vertices (exact export count may differ slightly after vertex
+   welding)
+   ```
 6. Select one or more generated blocks (multi-select works) to see an
    **Edit Block** section: pick a different style in *Replace with* and
    click **Swap Selected** (every currently-selected block, each resolved

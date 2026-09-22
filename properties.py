@@ -49,7 +49,7 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
     floors: bpy.props.IntProperty(name="Floors (modules)", default=1, min=1)
     extend_x: bpy.props.EnumProperty(
         name="Extend X",
-        description="Which way the building grows along X when Length changes",
+        description="Which way the building grows along X (Length) when Length changes",
         items=[
             ('POS', "X+", "Grows toward +X; the -X edge stays fixed"),
             ('NEG', "X-", "Grows toward -X; the +X edge stays fixed"),
@@ -59,7 +59,7 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
     )
     extend_y: bpy.props.EnumProperty(
         name="Extend Y",
-        description="Which way the building grows along Y when Width changes",
+        description="Which way the building grows along Y (Width) when Width changes",
         items=[
             ('POS', "Y+", "Grows toward +Y; the -Y edge stays fixed"),
             ('NEG', "Y-", "Grows toward -Y; the +Y edge stays fixed"),
