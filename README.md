@@ -4,6 +4,36 @@ Blender extension that assembles a simple rectangular ("box") building from a
 library of 3×3m modules, then lets you select individual placed blocks and
 swap them for a different module, or attach a balcony.
 
+## Terminology
+
+- **Module**: one building block - a 3D object (or several meshes together,
+  if they're always meant to stay as one piece) that the addon instances
+  many times as a **Collection Instance** (not a copy of the mesh - a
+  reference to a shared collection; swapping a module just points the same
+  object at a different collection). One module fills one grid cell:
+  `module_size` × `module_size` meters in plan, `module_height` tall (or its
+  own measured height for `bottom` and the roof - see **Generate** below).
+- **Band**: which role a module plays - `bottom` (ground floor), `middle`
+  (every floor in between), `top` (last floor), `roof`, `underground` (an
+  extra ring below the ground floor), `balcony` (see below), or
+  `bottomcorner`/`middlecorner` (a dedicated corner piece - see **Corner
+  modules** below). The same band can apply to several floors at once
+  (e.g. `middle` covers every floor in between bottom and top).
+- **Style**: a set of modules sharing one visual look (brick, concrete...),
+  grouped by a common name, `PB_<band>_<Style>`. One library file can hold
+  several styles, picked from the **Style** dropdown.
+- **Balcony**: a module of a different kind from bottom/middle/top/roof/
+  underground - balconies are **never placed automatically** by Generate.
+  They're added by hand, one at a time, onto an already-generated wall
+  block (**Add Balcony to Selected**, see below) - not part of the main
+  wall perimeter, just an extra object attached on top of whichever wall
+  block you pick, wherever you want one, not on every cell.
+- **Library**: a separate `.blend` file holding every module, grouped into
+  collections named `PB_<band>_<Style>` (see below). The working file
+  (where the building gets assembled) is a different file - the addon
+  **links** (`bpy.data.libraries.load`) collections from the library on
+  demand, rather than copying everything upfront.
+
 ## Module library convention
 
 Modules live in a **separate `.blend` file**. Group each module into its own
