@@ -75,9 +75,16 @@ bounding box's, that anchors the wall to the grid.
    *each* of the two walls meeting there, so with flat/thin modules the two
    simply meet at the corner edge with no gap. Clicking **Regenerate**
    rebuilds the grid but **preserves swaps and balconies** wherever the same
-   slot (floor+position for walls/underground, grid cell for roof tiles)
-   still exists after the resize - only slots that genuinely disappear lose
-   their customization.
+   slot (floor + side + position-along-that-side for walls/underground, grid
+   cell for roof tiles) still exists after the resize - only slots that
+   genuinely disappear lose their customization. The slot key is the wall's
+   *side* (N/E/S/W) plus its position along that specific side, not a
+   sequential index around the whole perimeter - the sequential index used
+   to depend on both Length and Width at once, so growing/shrinking either
+   one could reshuffle which physical wall a given index pointed to (a swap
+   or an attached balcony could visibly jump from, say, the south wall to
+   the east wall). Side+position stays tied to the same physical wall
+   regardless of how Length/Width change.
 6. Select one or more generated blocks (multi-select works) to see an
    **Edit Block** section: pick a different style in *Replace with* and
    click **Swap Selected** (every currently-selected block, each resolved

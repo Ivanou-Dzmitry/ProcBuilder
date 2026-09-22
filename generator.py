@@ -155,6 +155,15 @@ def _perimeter_walk(size_x, size_y):
         yield (0, j, 'W')
 
 
+def _local_pos(i, j, side):
+    """A cell's position ALONG its own side (S/N run along X -> i; E/W run along Y -> j).
+    Stable across Length/Width changes, unlike the sequential perimeter-walk index, which
+    depends on the total size and so shifts which physical cell a given index refers to
+    whenever size_x/size_y change - e.g. index 12 might be the south wall at one size and
+    the east wall at another. (side, local_pos) is what swap-preservation keys off instead."""
+    return i if side in ('S', 'N') else j
+
+
 def _band_for_floor(floor_index, floors):
     if floor_index == 0:
         return 'bottom'
@@ -191,14 +200,15 @@ def _snapshot_building_state():
             continue
         role = obj.get('pb_role')
         if role == 'wall':
-            slot_key = (obj.get('pb_floor'), obj.get('pb_perimeter_index'))
+            slot_key = (obj.get('pb_floor'), obj.get('pb_side'), obj.get('pb_local_pos'))
             wall_swaps[slot_key] = (obj.instance_collection.name, obj.get('pb_band'))
         elif role == 'roof':
             roof_swaps[(obj.get('pb_grid_i'), obj.get('pb_grid_j'))] = obj.instance_collection.name
         elif role == 'balcony':
             balcony_snapshots.append({
                 'floor': obj.get('pb_floor'),
-                'perimeter_index': obj.get('pb_perimeter_index'),
+                'side': obj.get('pb_side'),
+                'local_pos': obj.get('pb_local_pos'),
                 'collection_name': obj.instance_collection.name,
             })
     return wall_swaps, roof_swaps, balcony_snapshots
@@ -302,7 +312,8 @@ class PB_OT_generate_building(bpy.types.Operator):
                 return {'CANCELLED'}
 
             for perimeter_index, (i, j, side) in enumerate(perimeter_cells):
-                slot_key = (floor_index, perimeter_index)
+                local_pos = _local_pos(i, j, side)
+                slot_key = (floor_index, side, local_pos)
                 saved = wall_swaps.get(slot_key)
                 saved_name = saved[0] if saved is not None and saved[1] == band else None
                 module_collection = _resolve_collection(
@@ -333,6 +344,7 @@ class PB_OT_generate_building(bpy.types.Operator):
                         'pb_floor': floor_index,
                         'pb_perimeter_index': perimeter_index,
                         'pb_side': side,
+                        'pb_local_pos': local_pos,
                     },
                 )
                 wall_by_slot[slot_key] = obj
@@ -345,7 +357,7 @@ class PB_OT_generate_building(bpy.types.Operator):
                     obj.scale = (1.0, 1.0, scale_z)
 
         for info in balcony_snapshots:
-            wall_obj = wall_by_slot.get((info['floor'], info['perimeter_index']))
+            wall_obj = wall_by_slot.get((info['floor'], info['side'], info['local_pos']))
             if wall_obj is None:
                 continue  # that slot no longer exists at the new size - can't reattach it
             balcony_collection = library.ensure_collection_linked(filepath, info['collection_name'])
@@ -361,6 +373,8 @@ class PB_OT_generate_building(bpy.types.Operator):
             balcony['pb_band'] = 'balcony'
             balcony['pb_floor'] = wall_obj.get('pb_floor', 0)
             balcony['pb_perimeter_index'] = wall_obj.get('pb_perimeter_index', 0)
+            balcony['pb_side'] = wall_obj.get('pb_side')
+            balcony['pb_local_pos'] = wall_obj.get('pb_local_pos')
             building_collection.objects.link(balcony)
 
         if props.include_roof:

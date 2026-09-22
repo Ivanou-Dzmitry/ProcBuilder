@@ -2,7 +2,7 @@ import bpy
 
 from . import export as pb_export
 
-ADDON_VERSION = "0.14.1"
+ADDON_VERSION = "0.15.0"
 
 
 class PB_PT_main(bpy.types.Panel):

@@ -155,6 +155,8 @@ class PB_OT_add_balcony(bpy.types.Operator):
             balcony['pb_band'] = 'balcony'
             balcony['pb_floor'] = obj.get('pb_floor', 0)
             balcony['pb_perimeter_index'] = obj.get('pb_perimeter_index', 0)
+            balcony['pb_side'] = obj.get('pb_side')
+            balcony['pb_local_pos'] = obj.get('pb_local_pos')
             target_collection.objects.link(balcony)
 
         return {'FINISHED'}
