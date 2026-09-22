@@ -18,6 +18,36 @@ SIDE_ROTATION = {
 # by the addon; this Z-rotation just picks which grid axis the tile's "grain" runs along.
 ROOF_GRAIN_ROTATION = {'X': 0.0, 'Y': 90.0}
 
+# Which bands may use a dedicated corner module (PB_<key>_<Style>) instead of letting two
+# straight modules overlap at the corner - opt-in per band, e.g. 'top' deliberately isn't
+# here since it wasn't asked for and keeps working exactly as before.
+CORNER_BAND_KEY = {'bottom': 'bottomcorner', 'middle': 'middlecorner'}
+
+CORNERS = ('SW', 'SE', 'NE', 'NW')
+
+# Rotation (degrees) for a corner module, authored for the NORTH-WEST corner at 0deg - the
+# same reference SIDE_ROTATION uses for plain walls (N=0, W=90), so a corner module can reuse
+# the exact same "front face at local Y=0, pointing local +Y" rule as a normal wall panel for
+# EACH of its two arms, just with one arm pre-rotated +90 degrees into the same mesh instead
+# of relying on the addon to rotate it separately (the whole corner object only gets ONE
+# rotation). Concretely, author it like this:
+#   - "North" arm: build it exactly like a normal wall panel (front face at local Y=0,
+#     pointing local +Y - the same convention every other wall module already uses).
+#     Position it so its corner-side edge (not its center) sits at the object's origin
+#     (0, 0, 0), extending away from the origin along local +X for one module_size.
+#   - "West" arm: build another normal-convention panel (front at local Y=0, +Y front) and
+#     then rotate that piece +90 degrees around the origin in your modeling software (so its
+#     front ends up facing local -X instead of +Y) - this is what a plain W-side wall panel
+#     looks like after the addon's own 90 degree placement rotation, pre-baked into the mesh.
+#     Position it extending along local -Y for one module_size from the origin.
+#   - Join both arms into one object/collection; the origin (their shared corner point) is
+#     the module's own origin, at the base (Z=0), exactly matching the corner cell's outer
+#     grid point - no bounding-box centering is applied to corner modules (see
+#     _corner_location), the origin is trusted directly.
+# The same +90 step used for SIDE_ROTATION's N->W->S->E cycle carries a corner module through
+# NW->SW->SE->NE, so the addon only needs this one authored piece for all 4 corners.
+CORNER_ROTATION = {'NW': 0.0, 'SW': 90.0, 'SE': 180.0, 'NE': 270.0}
+
 # (triangle_count, vertex_count) per module collection, keyed by collection name - modules
 # don't change shape at runtime, so this avoids re-walking every mesh on every UI redraw.
 _MESH_STATS_CACHE = {}
@@ -206,6 +236,33 @@ def _perimeter_walk(size_x, size_y):
         yield (0, j, 'W')
 
 
+def _perimeter_walk_no_corners(size_x, size_y):
+    """Same four wall runs as _perimeter_walk, but excluding the 4 corner cells - for a band
+    that places a dedicated corner module there instead. i/j values are unchanged from the
+    full walk (just the two end cells of each run are skipped), so local_pos stays the same
+    for every cell that's still a straight run, whether or not corners are in use."""
+    for i in range(1, size_x - 1):
+        yield (i, 0, 'S')
+    for j in range(1, size_y - 1):
+        yield (size_x - 1, j, 'E')
+    for i in range(size_x - 2, 0, -1):
+        yield (i, size_y - 1, 'N')
+    for j in range(size_y - 2, 0, -1):
+        yield (0, j, 'W')
+
+
+def _corner_location(corner_id, size_x, size_y, module_size, extend_x, extend_y, z):
+    """World location for a dedicated corner module - placed exactly at the outer grid
+    corner point. Unlike a straight wall cell, no bbox/anchor adjustment is applied: the
+    module's own origin IS the corner point, by the same convention as authoring it directly
+    for that corner (see CORNER_ROTATION)."""
+    total_x = size_x * module_size
+    total_y = size_y * module_size
+    x = _axis_near(extend_x, total_x) if corner_id in ('SW', 'NW') else _axis_far(extend_x, total_x)
+    y = _axis_near(extend_y, total_y) if corner_id in ('SW', 'SE') else _axis_far(extend_y, total_y)
+    return (x, y, z)
+
+
 def _local_pos(i, j, side):
     """A cell's position ALONG its own side (S/N run along X -> i; E/W run along Y -> j).
     Stable across Length/Width changes, unlike the sequential perimeter-walk index, which
@@ -269,14 +326,21 @@ def estimate_stats(props):
         return None
 
     wall_cells_per_floor = 2 * (props.size_x + props.size_y)
+    can_use_corners = props.size_x >= 2 and props.size_y >= 2
     band_counts = {}
     if props.include_underground and 'underground' in band_map:
         band_counts['underground'] = band_counts.get('underground', 0) + wall_cells_per_floor
     for floor_index in range(props.floors):
         band = _band_for_floor(floor_index, props.floors)
-        if band not in band_map:
-            band = 'bottom'
-        band_counts[band] = band_counts.get(band, 0) + wall_cells_per_floor
+        straight_key = band if band in band_map else 'bottom'
+        corner_key = CORNER_BAND_KEY.get(band)
+        if can_use_corners and corner_key and corner_key in band_map:
+            # 4 dedicated corner instances instead of the corner cells straight modules
+            # would otherwise double up on (2 fewer cells at each end of all 4 runs).
+            band_counts[straight_key] = band_counts.get(straight_key, 0) + (wall_cells_per_floor - 8)
+            band_counts[corner_key] = band_counts.get(corner_key, 0) + 4
+        else:
+            band_counts[straight_key] = band_counts.get(straight_key, 0) + wall_cells_per_floor
     if props.include_roof and 'roof' in band_map:
         band_counts['roof'] = band_counts.get('roof', 0) + props.size_x * props.size_y
 
@@ -400,6 +464,8 @@ class PB_OT_generate_building(bpy.types.Operator):
         building_collection.objects.link(root)
 
         perimeter_cells = list(_perimeter_walk(props.size_x, props.size_y))
+        can_use_corners = props.size_x >= 2 and props.size_y >= 2
+        no_corner_cells = list(_perimeter_walk_no_corners(props.size_x, props.size_y)) if can_use_corners else perimeter_cells
         missing_bands = set()
         wall_by_slot = {}
 
@@ -438,7 +504,45 @@ class PB_OT_generate_building(bpy.types.Operator):
                 self.report({'ERROR'}, f"Could not link collection '{coll_name}'")
                 return {'CANCELLED'}
 
-            for perimeter_index, (i, j, side) in enumerate(perimeter_cells):
+            corner_default_collection = None
+            if can_use_corners:
+                corner_coll_name = band_map.get(CORNER_BAND_KEY.get(band, ''))
+                if corner_coll_name:
+                    corner_default_collection = library.ensure_collection_linked(filepath, corner_coll_name)
+            cells = no_corner_cells if corner_default_collection is not None else perimeter_cells
+
+            if corner_default_collection is not None:
+                z = floor_z_positions[floor_index] if floor_index >= 0 else 0.0
+                for corner_id in CORNERS:
+                    slot_key = (floor_index, corner_id, 0)
+                    saved = wall_swaps.get(slot_key)
+                    saved_name = saved[0] if saved is not None and saved[1] == band else None
+                    module_collection = _resolve_collection(
+                        library, filepath, corner_default_collection, saved_name,
+                    )
+                    location = _corner_location(
+                        corner_id, props.size_x, props.size_y, props.module_size,
+                        props.extend_x, props.extend_y, z,
+                    )
+                    name = f"PB_corner_f{floor_index}_{corner_id}"
+                    obj = _make_instance(
+                        name,
+                        module_collection,
+                        location,
+                        (0.0, 0.0, math.radians(CORNER_ROTATION[corner_id])),
+                        root,
+                        building_collection,
+                        {
+                            'pb_role': 'wall',
+                            'pb_band': band,
+                            'pb_floor': floor_index,
+                            'pb_side': corner_id,
+                            'pb_local_pos': 0,
+                        },
+                    )
+                    wall_by_slot[slot_key] = obj
+
+            for perimeter_index, (i, j, side) in enumerate(cells):
                 local_pos = _local_pos(i, j, side)
                 slot_key = (floor_index, side, local_pos)
                 saved = wall_swaps.get(slot_key)

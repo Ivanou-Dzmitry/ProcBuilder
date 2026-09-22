@@ -133,6 +133,12 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
             ('balcony', "Balcony", ""),
             ('roof', "Roof", ""),
             ('underground', "Underground", ""),
+            ('bottomcorner', "Bottom Corner", "Dedicated L-shaped corner piece for the "
+                                               "bottom band - optional, used at all 4 "
+                                               "corners instead of overlapping two straight "
+                                               "modules there"),
+            ('middlecorner', "Middle Corner", "Dedicated L-shaped corner piece for the "
+                                               "middle band - same as Bottom Corner"),
         ],
     )
     module_variant: bpy.props.EnumProperty(
@@ -144,7 +150,9 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
             ('None', "Plain", ""),
             ('Win', "Window", ""),
             ('Door', "Door", ""),
-            ('Corner', "Corner", ""),
+            ('Corner', "Corner", "Just a naming tag - NOT the dedicated corner module. "
+                                  "For an actual corner piece, use Role 'Bottom Corner'/"
+                                  "'Middle Corner' instead and leave this on Plain"),
         ],
     )
     module_style: bpy.props.StringProperty(

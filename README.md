@@ -16,14 +16,19 @@ PB_top_<StyleName>
 PB_balcony_<StyleName>
 PB_roof_<StyleName>
 PB_underground_<StyleName>
+PB_bottomcorner_<StyleName>
+PB_middlecorner_<StyleName>
 ```
 
 `<StyleName>` is any name (e.g. `Brick01`) — it groups the bands that belong
 to one visual style, and is what shows up in the addon's Style dropdown.
 Every style must at least have a `bottom` collection; the rest
-(`middle`/`top`/`balcony`/`roof`/`underground`) are optional (missing
-`middle`/`top` falls back to `bottom` with a warning; missing `roof`/
-`underground` just skips that optional step with a warning).
+(`middle`/`top`/`balcony`/`roof`/`underground`/`bottomcorner`/`middlecorner`)
+are optional (missing `middle`/`top` falls back to `bottom` with a warning;
+missing `roof`/`underground` just skips that optional step with a warning;
+missing `bottomcorner`/`middlecorner` just falls back to two overlapping
+wall modules at the corner, same as if the feature didn't exist - see
+**Corner modules** below).
 
 `roof` modules are authored exactly like wall modules (front face toward
 local +Y) — the addon tips them flat itself, no separate flat-plane
@@ -89,7 +94,10 @@ bounding box's, that anchors the wall to the grid.
    building's full length/width (floor 0 = bottom band, last floor = top
    band, floors in between = middle band). Corner cells get a module from
    *each* of the two walls meeting there, so with flat/thin modules the two
-   simply meet at the corner edge with no gap. Clicking **Regenerate**
+   simply meet at the corner edge with no gap - unless a dedicated corner
+   module exists for that band (see **Corner modules** below), in which
+   case one L-shaped piece takes the whole corner instead. Clicking
+   **Regenerate**
    rebuilds the grid but **preserves swaps and balconies** wherever the same
    slot (floor + side + position-along-that-side for walls/underground, grid
    cell for roof tiles) still exists after the resize - only slots that
@@ -142,7 +150,8 @@ bounding box's, that anchors the wall to the grid.
 
 The **Prepare Module (for library)** section automates the naming
 convention: select the object(s) making up one module, pick a *Role*
-(bottom/middle/top/balcony/roof/underground), an optional *Variant* right
+(bottom/middle/top/balcony/roof/underground/bottomcorner/middlecorner - see
+**Corner modules** below for the last two), an optional *Variant* right
 next to it (Plain/Window/Door/Corner), and type a *Style*, then click
 **Set Module Name** — it renames (or creates) the collection as
 `PB_<role>_<style>` (or `PB_<role>_<style>_<variant>` when Variant isn't
@@ -178,6 +187,52 @@ to apply it:
 
 Both only rename the object, never its collection.
 
+## Corner modules (optional, `bottom`/`middle` only)
+
+By default, each corner is just two straight wall modules meeting at a 90°
+edge (see the Generate step above and the limitations list below). For
+`bottom` and `middle` you can instead author a **dedicated L-shaped corner
+piece** that occupies the whole corner as one object, with no overlap.
+`top` isn't supported (not requested, corners there still overlap as
+before) - and if a style has no `PB_bottomcorner_<Style>`/
+`PB_middlecorner_<Style>` at all, everything works exactly as it did before
+this feature existed.
+
+Author it for the **North-West** corner at zero rotation - the same
+reference SIDE_ROTATION uses for plain walls (N=0°, W=90°) - so each of its
+two arms can reuse the exact same "front face at local Y=0, facing local
++Y" convention as a normal wall panel:
+1. **North arm**: build it exactly like a normal wall panel (front at local
+   Y=0, facing +Y). Position it so its corner-side edge - not its center -
+   sits at the object's origin `(0,0,0)`, extending away along local **+X**
+   for one *Module Size*.
+2. **West arm**: build another normal-convention panel and **rotate it
+   +90°** around the origin in your modeling software (its front ends up
+   facing local **-X** - this is what a plain W-side wall panel looks like
+   after the addon's own placement rotation, pre-baked into the mesh instead
+   of relying on the addon to rotate it separately, since the whole corner
+   object only gets ONE rotation). Position it extending along local **-Y**
+   for one *Module Size* from the origin.
+3. Join both arms into one object/collection. The origin - the shared
+   corner point of both arms - must sit exactly on the outer grid corner
+   point, at the base (Z=0): unlike straight wall cells, no bounding-box
+   centering is applied to corner modules, the origin is trusted as-is.
+4. **Set Module Name** with Role = `Bottom Corner` (or `Middle Corner`),
+   Variant = `Plain`, same Style as the rest of that style's modules -
+   produces `PB_bottomcorner_<Style>` (or `PB_middlecorner_<Style>`).
+
+The addon rotates this one authored piece by 0°/90°/180°/270° to cover all
+4 corners (North-West/South-West/South-East/North-East) - model it once per
+band, not four times. Don't confuse this with the *Variant* dropdown's
+`Corner` option (see above) - that's just a naming tag for an alternative
+*swappable* module and produces a completely different, unrelated style
+name; the real corner module goes through *Role*, not *Variant*.
+
+Corner slots participate in swap-preservation and the "Last build"/
+"Estimate" triangle counts exactly like straight wall slots, and were
+verified against a synthetic test asset to connect to the adjacent straight
+runs with no gap or overlap on all 4 corners.
+
 ## Tools: post-processing, independent of the generator
 
 Works on any mesh in Edit Mode - not tied to `Building` at all.
@@ -208,9 +263,11 @@ in a flaky state.
 
 - No floor slabs between stories — only walls, an optional roof cap, and an
   optional underground ring.
-- No dedicated corner module — corners are two wall modules (one per side)
-  meeting at the edge, rotated 90° to each other. Works cleanly for flat/thin
-  modules; a module with real depth will visibly overlap at the corner.
+- Dedicated corner modules are only supported for `bottom`/`middle` (see
+  **Corner modules** above); without one, and always for `top`, corners are
+  two wall modules (one per side) meeting at the edge, rotated 90° to each
+  other. Works cleanly for flat/thin modules; a module with real depth will
+  visibly overlap at the corner.
 - Regenerating preserves swaps/balconies only for slots that still exist
   after the resize (see the Generate step above); Tools objects like
   `Parapet` aren't part of the `Building` collection at all, so they're

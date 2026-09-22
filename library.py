@@ -1,6 +1,9 @@
 import bpy
 
-BANDS = ('bottom', 'middle', 'top', 'balcony', 'roof', 'underground')
+BANDS = (
+    'bottom', 'middle', 'top', 'balcony', 'roof', 'underground',
+    'bottomcorner', 'middlecorner',
+)
 
 
 def scan_library(filepath):
