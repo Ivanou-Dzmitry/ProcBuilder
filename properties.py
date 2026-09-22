@@ -81,6 +81,16 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
         min=0.01,
         subtype='DISTANCE',
     )
+    use_corner_modules: bpy.props.BoolProperty(
+        name="Use Corner Modules",
+        description="Off by default. When on, use a dedicated PB_bottomcorner_/"
+                    "PB_middlecorner_<Style> module at each corner if the style has one, "
+                    "instead of two straight modules overlapping there. When off, corners "
+                    "always use the overlap behavior even if corner modules exist in the "
+                    "library. When on but the style has none, falls back to the overlap "
+                    "behavior too, with a warning",
+        default=False,
+    )
     include_roof: bpy.props.BoolProperty(
         name="Add Roof",
         description="Cap the building with a flat grid of PB_roof_<Style> tiles",

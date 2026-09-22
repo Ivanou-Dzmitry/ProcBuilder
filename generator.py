@@ -356,7 +356,7 @@ def estimate_stats(props):
         return None
 
     wall_cells_per_floor = 2 * (props.size_x + props.size_y)
-    can_use_corners = props.size_x >= 2 and props.size_y >= 2
+    can_use_corners = props.use_corner_modules and props.size_x >= 2 and props.size_y >= 2
     band_counts = {}
     if props.include_underground and 'underground' in band_map:
         band_counts['underground'] = band_counts.get('underground', 0) + wall_cells_per_floor
@@ -494,7 +494,7 @@ class PB_OT_generate_building(bpy.types.Operator):
         building_collection.objects.link(root)
 
         perimeter_cells = list(_perimeter_walk(props.size_x, props.size_y))
-        can_use_corners = props.size_x >= 2 and props.size_y >= 2
+        can_use_corners = props.use_corner_modules and props.size_x >= 2 and props.size_y >= 2
         no_corner_cells = list(_perimeter_walk_no_corners(props.size_x, props.size_y)) if can_use_corners else perimeter_cells
         missing_bands = set()
         wall_by_slot = {}
@@ -535,10 +535,13 @@ class PB_OT_generate_building(bpy.types.Operator):
                 return {'CANCELLED'}
 
             corner_default_collection = None
-            if can_use_corners:
-                corner_coll_name = band_map.get(CORNER_BAND_KEY.get(band, ''))
+            corner_band_key = CORNER_BAND_KEY.get(band)
+            if can_use_corners and corner_band_key:
+                corner_coll_name = band_map.get(corner_band_key)
                 if corner_coll_name:
                     corner_default_collection = library.ensure_collection_linked(filepath, corner_coll_name)
+                if corner_default_collection is None:
+                    missing_bands.add(f'{corner_band_key} (skipped)')
             cells = no_corner_cells if corner_default_collection is not None else perimeter_cells
 
             if corner_default_collection is not None:

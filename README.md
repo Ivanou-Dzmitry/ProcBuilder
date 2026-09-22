@@ -86,6 +86,15 @@ bounding box's, that anchors the wall to the grid.
    together). The roof's height is auto-measured from the actual topmost
    wall band's bounding box, not assumed to equal *Module Height* — handy
    since a parapet/attic top band is often shorter than a normal floor.
+   **Use Corner Modules** (off by default) is separate from whether the
+   library even has corner modules: off, corners always overlap two
+   straight modules exactly like before, even if `PB_bottomcorner_<Style>`/
+   `PB_middlecorner_<Style>` exist - sometimes you just don't want a
+   corner module for a given build, without having to remove it from the
+   library. On with the style missing a corner module for a band, it
+   silently falls back to the overlap behavior too, plus the same kind of
+   warning `roof`/`underground` already give when missing
+   (`Style '<style>' is missing module(s) for: bottomcorner (skipped)`).
    Above the Generate button, an **"Estimate: N modules, ~X tris"** label
    updates live as you change any of the above - a prediction from the
    library's actual module geometry, so you can gauge scene complexity
@@ -201,7 +210,10 @@ piece** that occupies the whole corner as one object, with no overlap.
 `top` isn't supported (not requested, corners there still overlap as
 before) - and if a style has no `PB_bottomcorner_<Style>`/
 `PB_middlecorner_<Style>` at all, everything works exactly as it did before
-this feature existed.
+this feature existed. It's also gated by the **Use Corner Modules**
+checkbox in the Generate section (off by default) - a style can have a
+perfectly good corner module and Generate will still use the overlap
+behavior unless that checkbox is on.
 
 Author it for the **North-West** corner at zero rotation - the same
 reference SIDE_ROTATION uses for plain walls (N=0°, W=90°) - so each of its
