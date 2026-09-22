@@ -44,9 +44,13 @@ bounding box's, that anchors the wall to the grid.
 
 1. In the **ProcBuilder** tab of the 3D viewport sidebar, set *Library*
    to your module `.blend` file and pick a *Style*.
-2. Set *Length*, *Width* and *Floors* (module counts), *Extend Direction*
-   (South-West by default - which corner stays put in world space when you
-   grow/shrink Length/Width; the building extends away from it. Purely a
+2. Set *Length*, *Width* and *Floors* (module counts), *Extend X*/*Extend Y*
+   (Center by default on both axes - each axis independently picks which way
+   the building grows in world space when Length/Width change: `X+`/`X-`
+   pins the west/east edge in place while the other edge moves, `Y+`/`Y-`
+   does the same for south/north, and `Center` grows symmetrically. The two
+   axes are independent, so e.g. Extend X = Center with Extend Y = `Y-`
+   grows Length symmetrically while Width only extends south. Purely a
    visual offset of the whole building - it doesn't touch the slot numbering
    swap-preservation relies on) and *Module Size*/*Module Height* (the
    real-world size of one module in meters — 3m by default; change this if

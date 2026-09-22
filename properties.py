@@ -47,18 +47,25 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
     size_x: bpy.props.IntProperty(name="Length (modules)", default=3, min=1)
     size_y: bpy.props.IntProperty(name="Width (modules)", default=3, min=1)
     floors: bpy.props.IntProperty(name="Floors (modules)", default=1, min=1)
-    size_anchor: bpy.props.EnumProperty(
-        name="Extend Direction",
-        description="Which corner stays fixed in place when Length/Width change - the "
-                    "building grows away from that corner",
+    extend_x: bpy.props.EnumProperty(
+        name="Extend X",
+        description="Which way the building grows along X when Length changes",
         items=[
-            ('SW', "South-West", "Grows North/East"),
-            ('SE', "South-East", "Grows North/West"),
-            ('NW', "North-West", "Grows South/East"),
-            ('NE', "North-East", "Grows South/West"),
-            ('CENTER', "Center", "Grows equally in every direction"),
+            ('POS', "X+", "Grows toward +X; the -X edge stays fixed"),
+            ('NEG', "X-", "Grows toward -X; the +X edge stays fixed"),
+            ('CENTER', "Center", "Grows equally toward +X and -X"),
         ],
-        default='SW',
+        default='CENTER',
+    )
+    extend_y: bpy.props.EnumProperty(
+        name="Extend Y",
+        description="Which way the building grows along Y when Width changes",
+        items=[
+            ('POS', "Y+", "Grows toward +Y; the -Y edge stays fixed"),
+            ('NEG', "Y-", "Grows toward -Y; the +Y edge stays fixed"),
+            ('CENTER', "Center", "Grows equally toward +Y and -Y"),
+        ],
+        default='CENTER',
     )
     module_size: bpy.props.FloatProperty(
         name="Module Size (m)",

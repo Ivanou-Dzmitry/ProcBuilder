@@ -108,24 +108,29 @@ def _cell_location(i, j, side, size_x, size_y, anchor, z, module_size):
     return (target[0] - anchor_x, target[1] - anchor_y, z)
 
 
-def _footprint_offset(anchor, size_x, size_y, module_size):
+def _footprint_offset(extend_x, extend_y, size_x, size_y, module_size):
     """World-space (x, y) offset applied uniformly to every placed cell, so the footprint
-    grows away from whichever corner the user picked instead of always from South-West.
+    grows in whichever direction the user picked for each axis independently, instead of
+    always growing +X/+Y.
 
     This only ever shifts the WHOLE building - it never touches the internal (i, j) grid or
-    perimeter-walk numbering, so slot keys (floor_index, perimeter_index) used by swap
-    preservation stay stable across a resize regardless of the chosen anchor."""
+    perimeter-walk numbering, so slot keys (floor_index, side, local_pos) used by swap
+    preservation stay stable across a resize regardless of the chosen direction."""
     width = size_x * module_size
     depth = size_y * module_size
-    if anchor == 'SE':
-        return (-width, 0.0)
-    if anchor == 'NW':
-        return (0.0, -depth)
-    if anchor == 'NE':
-        return (-width, -depth)
-    if anchor == 'CENTER':
-        return (-width / 2.0, -depth / 2.0)
-    return (0.0, 0.0)  # 'SW', the original default
+    if extend_x == 'NEG':
+        offset_x = -width
+    elif extend_x == 'CENTER':
+        offset_x = -width / 2.0
+    else:  # 'POS', the default
+        offset_x = 0.0
+    if extend_y == 'NEG':
+        offset_y = -depth
+    elif extend_y == 'CENTER':
+        offset_y = -depth / 2.0
+    else:  # 'POS', the default
+        offset_y = 0.0
+    return (offset_x, offset_y)
 
 
 def _floor_z_positions(floors, module_height, bottom_height):
@@ -274,7 +279,8 @@ class PB_OT_generate_building(bpy.types.Operator):
         perimeter_cells = list(_perimeter_walk(props.size_x, props.size_y))
         missing_bands = set()
         wall_by_slot = {}
-        offset_x, offset_y = _footprint_offset(props.size_anchor, props.size_x, props.size_y, props.module_size)
+        offset_x, offset_y = _footprint_offset(
+            props.extend_x, props.extend_y, props.size_x, props.size_y, props.module_size)
 
         # The ground floor is often taller than the rest (real buildings do this a lot) - so
         # its stacking height is the module's own ACTUAL modeled height, measured from its
