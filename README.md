@@ -130,7 +130,12 @@ bounding box's, that anchors the wall to the grid.
    keeping one detailed facade and filling the other 3 sides with a plain
    filler style, e.g. `PB_bottom_WallFiller`). Any of these changes which
    module occupies a slot, so they update the **"Last build"** triangle
-   count too, without needing a full Regenerate.
+   count too, without needing a full Regenerate. Works on corner blocks
+   too - *Replace with* is filtered by the *corner* band there
+   (`bottomcorner`/`middlecorner`), not the straight one, so it only ever
+   offers styles that actually have a corner module; a style without one
+   simply won't appear, rather than swapping in a straight wall panel that
+   wouldn't fit the corner's position/rotation.
 7. With one or more wall blocks selected, pick a *Balcony* style and click
    **Add Balcony to Selected** to attach one to each - this also updates
    the **"Last build"** count (it adds new instances).
@@ -236,21 +241,25 @@ silently split the corner module off into its own unmatched style
 can't happen regardless of what Variant is set to.
 
 **If the corner ends up in the wrong place** (floating off to one side,
-near the middle of a wall, etc.) it's almost always the collection's own
-**Instance Offset**, not the object's origin marker in the viewport (that
-marker just shows the object's own position - what actually matters for
-instancing is the collection's Instance Offset, a separate property under
-Object Properties → Collection → Instance Offset when the collection is
-active in the Outliner). Creating a collection via the viewport's *Move to
-Collection → New Collection* sets Instance Offset to wherever the 3D
-cursor happened to be at that moment - if it wasn't sitting exactly on the
-corner point (e.g. left over from an earlier modeling step), the whole
-corner module shifts by that offset. The addon compensates for whatever
-Instance Offset a corner collection has (same as it already did for
-straight walls), so this shouldn't need a manual fix - but if you'd rather
-zero it out anyway: snap the 3D cursor to the corner vertex (`Shift+S` →
-Cursor to Selected) and right-click the collection in the Outliner → **Set
-Instance Offset**.
+near the middle of a wall, etc.) two separate things have to line up:
+1. **The geometry itself** - where the two arms actually meet, in the
+   library file's own world coordinates - must be exactly at `(0,0,0)`.
+   Joining objects or moving them by hand can shift this even if an
+   object's origin marker looks fine in the viewport.
+2. **The collection's own Instance Offset** - a separate property from
+   any object's origin, under Object Properties → Collection → Instance
+   Offset when the collection is active in the Outliner. Creating a
+   collection via the viewport's *Move to Collection → New Collection*
+   sets it to wherever the 3D cursor happened to be at that moment - if
+   that wasn't the corner point (e.g. left over from an earlier modeling
+   step), it'll be some arbitrary value.
+
+The addon compensates for whatever Instance Offset a corner collection has
+(same as it already did for straight walls), so (2) usually doesn't need a
+manual fix. (1) does, if it's actually off: select both arm meshes,
+`Object → Set Origin → Origin to 3D Cursor` (cursor first snapped to the
+corner vertex via `Shift+S` → Cursor to Selected), then move the object so
+its origin sits exactly at the library file's world `(0,0,0)`.
 
 Corner slots participate in swap-preservation and the "Last build"/
 "Estimate" triangle counts exactly like straight wall slots, and were

@@ -48,6 +48,25 @@ CORNERS = ('SW', 'SE', 'NE', 'NW')
 # NW->SW->SE->NE, so the addon only needs this one authored piece for all 4 corners.
 CORNER_ROTATION = {'NW': 0.0, 'SW': 90.0, 'SE': 180.0, 'NE': 270.0}
 
+
+def lookup_band_for_object(obj):
+    """Which library band key to use when resolving a NEW collection for this object - e.g.
+    for Swap/Fill Side, which need to know whether to pull from PB_bottom_<style> or
+    PB_bottomcorner_<style>.
+
+    This is deliberately NOT just obj['pb_band']: a corner slot's pb_band stays 'bottom'/
+    'middle' (not 'bottomcorner'/'middlecorner') so Regenerate's slot-restore band-matching
+    in _snapshot_building_state keeps comparing against the plain band names it always has -
+    only here, where we're about to link a *different* module in, do we need to know the
+    slot is actually a corner and route it to the corner band instead."""
+    band = obj.get('pb_band')
+    if band is None:
+        return None
+    if obj.get('pb_side') in CORNERS:
+        return CORNER_BAND_KEY.get(band, band)
+    return band
+
+
 # (triangle_count, vertex_count) per module collection, keyed by collection name - modules
 # don't change shape at runtime, so this avoids re-walking every mesh on every UI redraw.
 _MESH_STATS_CACHE = {}

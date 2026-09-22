@@ -14,13 +14,13 @@ def get_style_items(self, context):
 
 
 def get_swap_style_items(self, context):
-    from . import library
+    from . import generator, library
 
     props = context.scene.pb_props
     obj = context.active_object
     if not obj or 'pb_band' not in obj or not props.library_path:
         return [('NONE', '-', '')]
-    band = obj['pb_band']
+    band = generator.lookup_band_for_object(obj)
     styles = library.scan_library(bpy.path.abspath(props.library_path))
     items = [(name, name, '') for name, bands in sorted(styles.items()) if bands.get(band)]
     return items or [('NONE', 'No modules for this band', '')]

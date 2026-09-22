@@ -24,6 +24,7 @@ class PB_OT_swap_module(bpy.types.Operator):
 
     def execute(self, context):
         from . import library
+        from . import generator as pb_generator
 
         selected = [o for o in context.selected_objects if 'pb_band' in o]
         if not selected:
@@ -46,7 +47,7 @@ class PB_OT_swap_module(bpy.types.Operator):
 
         missing_bands = set()
         for target in targets:
-            band = target.get('pb_band')
+            band = pb_generator.lookup_band_for_object(target)
             if band is None:
                 continue
             new_name = f"PB_{band}_{props.swap_style}"
@@ -63,8 +64,7 @@ class PB_OT_swap_module(bpy.types.Operator):
                 "module(s); those blocks were left unchanged",
             )
 
-        from . import generator
-        generator.refresh_building_stats()
+        pb_generator.refresh_building_stats()
 
         return {'FINISHED'}
 
@@ -81,6 +81,7 @@ class PB_OT_fill_side(bpy.types.Operator):
 
     def execute(self, context):
         from . import library
+        from . import generator as pb_generator
 
         obj = context.active_object
         if obj is None or obj.get('pb_role') != 'wall' or 'pb_side' not in obj:
@@ -101,7 +102,9 @@ class PB_OT_fill_side(bpy.types.Operator):
 
         missing_bands = set()
         for target in targets:
-            band = target['pb_band']
+            band = pb_generator.lookup_band_for_object(target)
+            if band is None:
+                continue
             new_name = f"PB_{band}_{props.swap_style}"
             new_collection = library.ensure_collection_linked(filepath, new_name)
             if new_collection is None:
@@ -116,8 +119,7 @@ class PB_OT_fill_side(bpy.types.Operator):
                 "module(s); those blocks were left unchanged",
             )
 
-        from . import generator
-        generator.refresh_building_stats()
+        pb_generator.refresh_building_stats()
 
         return {'FINISHED'}
 

@@ -3,7 +3,7 @@ import bpy
 from . import export as pb_export
 from . import generator as pb_generator
 
-ADDON_VERSION = "0.18.2"
+ADDON_VERSION = "0.18.3"
 
 
 class PB_PT_main(bpy.types.Panel):
