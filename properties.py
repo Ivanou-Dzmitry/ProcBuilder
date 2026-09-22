@@ -44,9 +44,12 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
         subtype='FILE_PATH',
     )
     style: bpy.props.EnumProperty(name="Style", items=get_style_items)
-    size_x: bpy.props.IntProperty(name="Length (modules)", default=3, min=1)
-    size_y: bpy.props.IntProperty(name="Width (modules)", default=3, min=1)
-    floors: bpy.props.IntProperty(name="Floors (modules)", default=1, min=1)
+    size_x: bpy.props.IntProperty(
+        name="Length", description="Length in modules", default=3, min=1)
+    size_y: bpy.props.IntProperty(
+        name="Width", description="Width in modules", default=3, min=1)
+    floors: bpy.props.IntProperty(
+        name="Floors", description="Height in floors (modules)", default=1, min=1)
     extend_x: bpy.props.EnumProperty(
         name="Extend X",
         description="Which way the building grows along X (Length) when Length changes",
