@@ -223,6 +223,36 @@ def _band_for_floor(floor_index, floors):
     return 'middle'
 
 
+def refresh_building_stats():
+    """Recompute total (triangle, vertex) counts across every instanced block currently in
+    the Building collection and store them on the root object's pb_last_tris/pb_last_verts.
+
+    Generate already does this itself; this is for operations that change which module a
+    slot uses WITHOUT a full Regenerate - Swap, Fill Side, Add Balcony - so the panel's
+    'Last build' label stays accurate after those too, not just after Generate."""
+    root = bpy.data.objects.get(BUILDING_ROOT_NAME)
+    building = bpy.data.collections.get(BUILDING_COLLECTION_NAME)
+    if root is None or building is None:
+        return None
+
+    collection_counts = {}
+    for obj in building.objects:
+        if obj.instance_collection is not None:
+            collection_counts[obj.instance_collection] = (
+                collection_counts.get(obj.instance_collection, 0) + 1
+            )
+    total_tris = 0
+    total_verts = 0
+    for collection, count in collection_counts.items():
+        tris, verts = _mesh_stats(collection)
+        total_tris += tris * count
+        total_verts += verts * count
+
+    root['pb_last_tris'] = total_tris
+    root['pb_last_verts'] = total_verts
+    return total_tris, total_verts
+
+
 def estimate_stats(props):
     """Predict (instance_count, triangle_count, vertex_count) for the CURRENT Generate
     settings without building anything - lets the panel show a live estimate as Length/
@@ -525,24 +555,11 @@ class PB_OT_generate_building(bpy.types.Operator):
             )
 
         role_counts = {'wall': 0, 'balcony': 0, 'roof': 0}
-        collection_counts = {}
         for obj in building_collection.objects:
             role = obj.get('pb_role')
             if role in role_counts:
                 role_counts[role] += 1
-            if obj.instance_collection is not None:
-                collection_counts[obj.instance_collection] = (
-                    collection_counts.get(obj.instance_collection, 0) + 1
-                )
-        total_tris = 0
-        total_verts = 0
-        for collection, count in collection_counts.items():
-            tris, verts = _mesh_stats(collection)
-            total_tris += tris * count
-            total_verts += verts * count
-
-        root['pb_last_tris'] = total_tris
-        root['pb_last_verts'] = total_verts
+        total_tris, total_verts = refresh_building_stats()
 
         total_instances = sum(role_counts.values())
         delta = ""

@@ -3,7 +3,7 @@ import bpy
 from . import export as pb_export
 from . import generator as pb_generator
 
-ADDON_VERSION = "0.17.0"
+ADDON_VERSION = "0.17.1"
 
 
 class PB_PT_main(bpy.types.Panel):
@@ -43,17 +43,15 @@ class PB_PT_main(bpy.types.Panel):
 
         estimate = pb_generator.estimate_stats(props)
         if estimate is not None:
-            count, tris, verts = estimate
-            box.label(text=f"Estimate: {count} modules, ~{tris:,} tris, ~{verts:,} verts")
+            count, tris, _verts = estimate
+            box.label(text=f"Estimate: {count} modules, ~{tris:,} tris")
 
         exists = bpy.data.collections.get("Building") is not None
         box.operator("pb.generate_building", text="Regenerate" if exists else "Generate")
 
         root = bpy.data.objects.get("Building")
         if root is not None and 'pb_last_tris' in root:
-            box.label(
-                text=f"Last build: ~{root['pb_last_tris']:,} tris, ~{root['pb_last_verts']:,} verts"
-            )
+            box.label(text=f"Last build: ~{root['pb_last_tris']:,} tris")
 
         obj = context.active_object
         if obj is not None and obj.get('pb_role'):

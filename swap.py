@@ -63,6 +63,9 @@ class PB_OT_swap_module(bpy.types.Operator):
                 "module(s); those blocks were left unchanged",
             )
 
+        from . import generator
+        generator.refresh_building_stats()
+
         return {'FINISHED'}
 
 
@@ -113,6 +116,9 @@ class PB_OT_fill_side(bpy.types.Operator):
                 "module(s); those blocks were left unchanged",
             )
 
+        from . import generator
+        generator.refresh_building_stats()
+
         return {'FINISHED'}
 
 
@@ -158,6 +164,9 @@ class PB_OT_add_balcony(bpy.types.Operator):
             balcony['pb_side'] = obj.get('pb_side')
             balcony['pb_local_pos'] = obj.get('pb_local_pos')
             target_collection.objects.link(balcony)
+
+        from . import generator
+        generator.refresh_building_stats()
 
         return {'FINISHED'}
 

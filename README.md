@@ -81,8 +81,8 @@ bounding box's, that anchors the wall to the grid.
    together). The roof's height is auto-measured from the actual topmost
    wall band's bounding box, not assumed to equal *Module Height* — handy
    since a parapet/attic top band is often shorter than a normal floor.
-   Above the Generate button, an **"Estimate: N modules, ~X tris, ~Y verts"**
-   label updates live as you change any of the above - a prediction from the
+   Above the Generate button, an **"Estimate: N modules, ~X tris"** label
+   updates live as you change any of the above - a prediction from the
    library's actual module geometry, so you can gauge scene complexity
    before committing to a (Re)generate.
 5. Click **Generate**. This builds all 4 walls per floor, each running the
@@ -101,11 +101,12 @@ bounding box's, that anchors the wall to the grid.
    or an attached balcony could visibly jump from, say, the south wall to
    the east wall). Side+position stays tied to the same physical wall
    regardless of how Length/Width change. Below the button, a **"Last
-   build: ~X tris, ~Y verts"** label shows the actual (not estimated) count
-   for what just got built. The same numbers, broken down by wall/balcony/
-   roof instance counts and the change from the previous build (`was N →
-   +/-M`), are also printed to Blender's **system console** on every
-   Generate/Regenerate (`Window → Toggle System Console` on Windows), e.g.:
+   build: ~X tris"** label shows the actual (not estimated) count for what
+   just got built. The full numbers - triangles AND vertices, broken down
+   by wall/balcony/roof instance counts and the change from the previous
+   build (`was N → +/-M`) - are printed to Blender's **system console** on
+   every Generate/Regenerate (`Window → Toggle System Console` on Windows),
+   e.g.:
    ```
    [ProcBuilder] Generated 'Brick01' 5x3x3: 48 walls, 2 balconies, 15 roof
    tiles (65 instances) - ~12,400 triangles (was 9,800 → +2,600),
@@ -119,9 +120,12 @@ bounding box's, that anchors the wall to the grid.
    module with any selected block), or **Fill Selected Side** (every block
    on the active block's N/E/S/W side, across all floors — handy for
    keeping one detailed facade and filling the other 3 sides with a plain
-   filler style, e.g. `PB_bottom_WallFiller`).
+   filler style, e.g. `PB_bottom_WallFiller`). Any of these changes which
+   module occupies a slot, so they update the **"Last build"** triangle
+   count too, without needing a full Regenerate.
 7. With one or more wall blocks selected, pick a *Balcony* style and click
-   **Add Balcony to Selected** to attach one to each.
+   **Add Balcony to Selected** to attach one to each - this also updates
+   the **"Last build"** count (it adds new instances).
 8. In **Export**, name the export and click **Export FBX** — bakes the whole
    building into one mesh, welds coincident vertices at module seams (Merge
    by Distance, 1mm), recenters the mesh on X/Y while keeping its base at
