@@ -108,6 +108,26 @@ def _cell_location(i, j, side, size_x, size_y, anchor, z, module_size):
     return (target[0] - anchor_x, target[1] - anchor_y, z)
 
 
+def _footprint_offset(anchor, size_x, size_y, module_size):
+    """World-space (x, y) offset applied uniformly to every placed cell, so the footprint
+    grows away from whichever corner the user picked instead of always from South-West.
+
+    This only ever shifts the WHOLE building - it never touches the internal (i, j) grid or
+    perimeter-walk numbering, so slot keys (floor_index, perimeter_index) used by swap
+    preservation stay stable across a resize regardless of the chosen anchor."""
+    width = size_x * module_size
+    depth = size_y * module_size
+    if anchor == 'SE':
+        return (-width, 0.0)
+    if anchor == 'NW':
+        return (0.0, -depth)
+    if anchor == 'NE':
+        return (-width, -depth)
+    if anchor == 'CENTER':
+        return (-width / 2.0, -depth / 2.0)
+    return (0.0, 0.0)  # 'SW', the original default
+
+
 def _floor_z_positions(floors, module_height, bottom_height):
     """Starting Z for each floor 0..floors-1. Floor 0 is bottom_height tall (normally equal
     to module_height, but the ground floor is often taller in real buildings); every floor
@@ -154,7 +174,13 @@ def _clear_existing_building():
 
 def _snapshot_building_state():
     """Capture which module each slot currently uses before clearing, so Regenerate can
-    restore manual swaps (and reattach balconies) afterward instead of discarding them."""
+    restore manual swaps (and reattach balconies) afterward instead of discarding them.
+
+    Wall swaps are stored WITH the band they were recorded under. A slot's default band can
+    change across a regenerate (e.g. floor 2 is 'middle' in a 5-floor building but becomes
+    'top' once you drop it to 3 floors) - blindly restoring the old collection in that case
+    would silently keep a middle-band module (and its height) sitting where a top band should
+    now be, throwing off the roof. Only restore when the band still matches."""
     col = bpy.data.collections.get(BUILDING_COLLECTION_NAME)
     wall_swaps, roof_swaps, balcony_snapshots = {}, {}, []
     if col is None:
@@ -165,7 +191,8 @@ def _snapshot_building_state():
             continue
         role = obj.get('pb_role')
         if role == 'wall':
-            wall_swaps[(obj.get('pb_floor'), obj.get('pb_perimeter_index'))] = obj.instance_collection.name
+            slot_key = (obj.get('pb_floor'), obj.get('pb_perimeter_index'))
+            wall_swaps[slot_key] = (obj.instance_collection.name, obj.get('pb_band'))
         elif role == 'roof':
             roof_swaps[(obj.get('pb_grid_i'), obj.get('pb_grid_j'))] = obj.instance_collection.name
         elif role == 'balcony':
@@ -237,6 +264,7 @@ class PB_OT_generate_building(bpy.types.Operator):
         perimeter_cells = list(_perimeter_walk(props.size_x, props.size_y))
         missing_bands = set()
         wall_by_slot = {}
+        offset_x, offset_y = _footprint_offset(props.size_anchor, props.size_x, props.size_y, props.module_size)
 
         # The ground floor is often taller than the rest (real buildings do this a lot) - so
         # its stacking height is the module's own ACTUAL modeled height, measured from its
@@ -275,8 +303,10 @@ class PB_OT_generate_building(bpy.types.Operator):
 
             for perimeter_index, (i, j, side) in enumerate(perimeter_cells):
                 slot_key = (floor_index, perimeter_index)
+                saved = wall_swaps.get(slot_key)
+                saved_name = saved[0] if saved is not None and saved[1] == band else None
                 module_collection = _resolve_collection(
-                    library, filepath, default_collection, wall_swaps.get(slot_key),
+                    library, filepath, default_collection, saved_name,
                 )
                 anchor = _module_anchor(module_collection)
 
@@ -284,6 +314,7 @@ class PB_OT_generate_building(bpy.types.Operator):
                 location = _cell_location(
                     i, j, side, props.size_x, props.size_y, anchor, z, props.module_size,
                 )
+                location = (location[0] + offset_x, location[1] + offset_y, location[2])
                 if band == 'underground':
                     # Independent, user-set depth (not module_height) so one underground
                     # module can flex to bury the base into uneven terrain.
@@ -364,6 +395,7 @@ class PB_OT_generate_building(bpy.types.Operator):
                         location, rotation_euler = _roof_cell_transform(
                             i, j, anchor3d, roof_z, props.module_size, grain_deg,
                         )
+                        location = (location[0] + offset_x, location[1] + offset_y, location[2])
                         _make_instance(
                             f"PB_roof_{roof_index}",
                             roof_collection,

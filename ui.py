@@ -2,7 +2,7 @@ import bpy
 
 from . import export as pb_export
 
-ADDON_VERSION = "0.14.0"
+ADDON_VERSION = "0.14.1"
 
 
 class PB_PT_main(bpy.types.Panel):
@@ -24,6 +24,7 @@ class PB_PT_main(bpy.types.Panel):
         row.prop(props, "size_x")
         row.prop(props, "size_y")
         row.prop(props, "floors")
+        box.prop(props, "size_anchor")
         row = box.row(align=True)
         row.prop(props, "module_size")
         row.prop(props, "module_height")

@@ -47,6 +47,19 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
     size_x: bpy.props.IntProperty(name="Length (modules)", default=3, min=1)
     size_y: bpy.props.IntProperty(name="Width (modules)", default=3, min=1)
     floors: bpy.props.IntProperty(name="Floors (modules)", default=1, min=1)
+    size_anchor: bpy.props.EnumProperty(
+        name="Extend Direction",
+        description="Which corner stays fixed in place when Length/Width change - the "
+                    "building grows away from that corner",
+        items=[
+            ('SW', "South-West", "Grows North/East"),
+            ('SE', "South-East", "Grows North/West"),
+            ('NW', "North-West", "Grows South/East"),
+            ('NE', "North-East", "Grows South/West"),
+            ('CENTER', "Center", "Grows equally in every direction"),
+        ],
+        default='SW',
+    )
     module_size: bpy.props.FloatProperty(
         name="Module Size (m)",
         description="Grid spacing along X/Y for one module",

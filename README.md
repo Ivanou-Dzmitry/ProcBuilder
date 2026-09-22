@@ -44,13 +44,22 @@ bounding box's, that anchors the wall to the grid.
 
 1. In the **ProcBuilder** tab of the 3D viewport sidebar, set *Library*
    to your module `.blend` file and pick a *Style*.
-2. Set *Length*, *Width* and *Floors* (module counts) and *Module Size* /
-   *Module Height* (the real-world size of one module in meters — 3m by
-   default; change this if your modules aren't 3×3m). The ground floor's
-   own height is auto-measured from the `bottom` module's actual bounding
-   box (real buildings often have a taller ground floor) - there's no
-   separate field for it, just model `bottom` at whatever height it needs,
-   and floor 1 stacks on top of its real height, undistorted.
+2. Set *Length*, *Width* and *Floors* (module counts), *Extend Direction*
+   (South-West by default - which corner stays put in world space when you
+   grow/shrink Length/Width; the building extends away from it. Purely a
+   visual offset of the whole building - it doesn't touch the slot numbering
+   swap-preservation relies on) and *Module Size*/*Module Height* (the
+   real-world size of one module in meters — 3m by default; change this if
+   your modules aren't 3×3m). The ground floor's own height is auto-measured
+   from the `bottom` module's actual bounding box (real buildings often have
+   a taller ground floor) - there's no separate field for it, just model
+   `bottom` at whatever height it needs, and floor 1 stacks on top of its
+   real height, undistorted. Changing *Floors* recomputes each floor's band
+   from scratch (e.g. floor 2 can be `middle` in a 5-floor building but
+   become `top` once you drop to 3) - a swap is only restored on Regenerate
+   if the slot's band didn't change; otherwise it gets that band's fresh
+   default module instead of a stale one, so the roof always lines up with
+   whatever is actually the top floor now.
 3. Optionally enable **Add Underground Row** (one extra wall ring below
    floor 0, from `PB_underground_<Style>`, for burying the base into uneven
    terrain — set its own *height* field, default 0.5m; the module is
