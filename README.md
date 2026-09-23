@@ -77,6 +77,11 @@ bounding box's, that anchors the wall to the grid.
 
 ## Using the addon
 
+The panel's sections (**Generate**, **Edit Block**, **Export**, **Tools**,
+**Prepare Module**) are collapsible - click the arrow left of a section's
+title. **Generate**/**Edit Block** start expanded, **Export**/**Tools**/
+**Prepare Module** start collapsed; each remembers its own state.
+
 1. In the **ProcBuilder** tab of the 3D viewport sidebar, set *Library*
    to your module `.blend` file and pick a *Style*.
 2. Set *Length*, *Width* and *Floors* (module counts), *Extend X*/*Extend Y*

@@ -1,4 +1,4 @@
-# ProcBuilder — Tutorial (v0.19.1)
+# ProcBuilder — Tutorial (v0.19.2)
 
 A Blender add-on that assembles a rectangular box-style building from your modules (bottom/middle/top/roof/underground/balcony, using an N×N m grid), lets you select and replace individual blocks, and exports the finished building as a single clean mesh (FBX, for Unity and other engines). It also includes a separate **Tools** section for post-processing arbitrary geometry, such as parapets and mesh cleanup, independently of the generator.
 
@@ -8,14 +8,17 @@ The add-on version is always shown in the panel header (`ProcBuilder vX.Y.Z`), m
 
 ## 1. Installation
 
-1. Build the archive or use the existing `dist\procedure_building.zip`:
-   ```bash
-   cd D:\Blender\ProcedureBuilding
-   .\build.ps1
-   ```
+1. Build the archive or use the existing `dist\procedure_building.zip`
 2. In Blender, select **Edit → Preferences → Get Extensions → Install from Disk** and select `procedure_building.zip`.
 3. Enable the **ProcBuilder** add-on if it is not enabled automatically.
 4. Open **3D Viewport → N-panel (right side) → ProcBuilder**.
+
+The panel's sections (**Generate**, **Edit Block**, **Export**, **Tools**,
+**Prepare Module**) are collapsible - click the arrow to the left of a
+section's title. **Generate** and **Edit Block** start expanded (used
+most often); **Export**/**Tools**/**Prepare Module** start collapsed
+(not always needed). Each section remembers its own expanded/collapsed
+state across sessions.
 
 ---
 
