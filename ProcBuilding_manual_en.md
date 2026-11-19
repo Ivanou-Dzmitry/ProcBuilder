@@ -6,7 +6,7 @@ The add-on version is always shown in the panel header (`ProcBuilder vX.Y.Z`), m
 
 ![ProcBuilder: a generated building and the add-on panel](images/overview.webp)
 
-**Related projects:** [ModuleModo](https://github.com/Ivanou-Dzmitry/ModuleModo) generates the low-poly wall modules that ProcBuilder assembles; [ConstructionBuilder](https://github.com/Ivanou-Dzmitry/construction-builder) builds the frame of a building under construction.
+**Related projects:** [ModuleModo](https://github.com/Ivanou-Dzmitry/ModuleModo) generates low-poly wall modules you can turn into ProcBuilder modules; [ConstructionBuilder](https://github.com/Ivanou-Dzmitry/construction-builder) builds the frame of a building under construction.
 
 ---
 
