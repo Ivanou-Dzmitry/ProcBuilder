@@ -1,0 +1,9 @@
+title: ProcBuilder
+description: Blender add-on for procedurally assembling rectangular, box-style buildings from reusable modules - fast prototyping for game dev.
+theme: jekyll-theme-cayman
+show_downloads: false
+exclude:
+  - dist
+  - "*.py"
+  - build.ps1
+  - blender_manifest.toml

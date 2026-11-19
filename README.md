@@ -4,6 +4,17 @@ Blender extension that assembles a simple rectangular ("box") building from a
 library of 3×3m modules, then lets you select individual placed blocks and
 swap them for a different module, or attach a balcony.
 
+![ProcBuilder: a generated building and the add-on panel](images/overview.webp)
+
+**Manuals:** [English](ProcBuilding_manual_en.md) · [Русский](ProcBuilding_manual_ru.md)
+
+**Related projects:**
+- [ModuleModo](https://github.com/Ivanou-Dzmitry/ModuleModo) - generates the
+  low-poly wall modules (windows, doors, corners, bay windows, balconies) that
+  ProcBuilder assembles into buildings.
+- [ConstructionBuilder](https://github.com/Ivanou-Dzmitry/construction-builder) -
+  a Blender extension that builds the frame of a building under construction.
+
 ## Terminology
 
 - **Module**: one building block - a 3D object (or several meshes together,

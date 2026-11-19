@@ -10,6 +10,10 @@
 Версия аддона всегда видна в заголовке панели ("ProcBuilder vX.Y.Z") —
 удобно проверять, что переустановка реально подтянула новую версию.
 
+![ProcBuilder: собранное здание и панель аддона](images/overview.webp)
+
+**Связанные проекты:** [ModuleModo](https://github.com/Ivanou-Dzmitry/ModuleModo) — генерирует низкополигональные стеновые модули, из которых ProcBuilder собирает здания; [ConstructionBuilder](https://github.com/Ivanou-Dzmitry/construction-builder) — строит каркас здания на стадии стройки.
+
 ---
 
 ## 1. Установка

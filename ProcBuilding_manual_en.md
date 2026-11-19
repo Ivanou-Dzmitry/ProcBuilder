@@ -4,6 +4,10 @@ A Blender add-on that assembles a rectangular box-style building from your modul
 
 The add-on version is always shown in the panel header (`ProcBuilder vX.Y.Z`), making it easy to verify that a reinstall actually updated the add-on.
 
+![ProcBuilder: a generated building and the add-on panel](images/overview.webp)
+
+**Related projects:** [ModuleModo](https://github.com/Ivanou-Dzmitry/ModuleModo) generates the low-poly wall modules that ProcBuilder assembles; [ConstructionBuilder](https://github.com/Ivanou-Dzmitry/construction-builder) builds the frame of a building under construction.
+
 ---
 
 ## 1. Installation
