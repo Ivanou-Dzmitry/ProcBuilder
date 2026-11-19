@@ -2,8 +2,9 @@ import bpy
 
 from . import export as pb_export
 from . import generator as pb_generator
+from . import presets as pb_presets
 
-ADDON_VERSION = "0.19.2"
+ADDON_VERSION = "0.20.0"
 
 
 class PB_PT_main(bpy.types.Panel):
@@ -125,6 +126,17 @@ class PB_PT_main(bpy.types.Panel):
             box.operator(
                 "pb.rename_collection_elements", text="Rename All In Collection", icon='GROUP',
             )
+
+        header, box = layout.panel("PB_PT_presets", default_closed=True)
+        header.label(text="Presets", icon='PRESET')
+        if box:
+            box.prop(props, "preset_dir")
+            box.label(text=f"Saves as: {pb_presets.next_preset_filename(props)}")
+            box.operator("pb.save_preset", text="Save Preset", icon='FILE_TICK')
+            row = box.row(align=True)
+            row.prop(props, "preset_file", text="")
+            row.operator("pb.load_preset", text="Load Preset", icon='IMPORT')
+            box.operator("pb.open_preset_folder", text="Open Preset Folder", icon='FILE_FOLDER')
 
 
 classes = (PB_PT_main,)

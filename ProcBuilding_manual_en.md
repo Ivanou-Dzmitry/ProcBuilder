@@ -1,4 +1,4 @@
-# ProcBuilder — Tutorial (v0.19.2)
+# ProcBuilder — Tutorial (v0.20.0)
 
 A Blender add-on that assembles a rectangular box-style building from your modules (bottom/middle/top/roof/underground/balcony, using an N×N m grid), lets you select and replace individual blocks, and exports the finished building as a single clean mesh (FBX, for Unity and other engines). It also includes a separate **Tools** section for post-processing arbitrary geometry, such as parapets and mesh cleanup, independently of the generator.
 
@@ -278,6 +278,46 @@ The corner compensation formula (`1/cos(turn angle/2)`) works for any profile. I
 Because building walls are usually zero-thickness planes, the parapet profile extends **symmetrically on both sides** of the wall plane. The same strip appears outside and inside the building at the same distance (`radius`/`Depth`) from the original edge. This is expected: the bevel profile is centered on the curve, and the curve lies directly on the zero-thickness wall plane.
 
 > An experimental **Remove Interior Faces** button was removed in v0.9.1. It used a ray-cast point-in-solid test to find and delete faces buried inside other geometry. The approach works for closed solid volumes, such as intersecting cubes, but building walls are flat, zero-thickness faces rather than closed volumes, so the point-in-mesh test was unreliable on real building geometry. It could delete the wrong face or do nothing. No reliable solution for flat geometry was found in a reasonable amount of time, so the unreliable tool was removed.
+
+---
+
+## 7a. Presets — rebuild a building you assembled
+
+**Purpose:** you built a building and tuned modules by hand — and want to get
+it back (or something close to it) later without redoing everything.
+
+The **Presets** section (bottom of the panel, collapsed by default):
+
+- **Save Preset** — writes a `.json` file containing:
+  - every **Generate** setting: library, style, Length/Width/Floors,
+    Extend X/Y, Module Size/Height, Underground (+ height), Roof
+    (+ direction), Use Corner Modules;
+  - the current building's **manual edits**: swapped wall and roof-tile
+    modules, and added balconies. Slots still holding their style's default
+    module aren't written - they come back as the default on load anyway.
+
+  The file name is built from the building's parameters:
+  `<style>_<Length>x<Width>x<Floors>_v001.json`, e.g. `t01_3x23x6_v001.json`.
+  The label under the button always shows the next file name (**Saves as**).
+  Saving again with the same parameters **never overwrites** an earlier file:
+  it creates `_v002`, `_v003`... (same as Export). With no building in the
+  scene, only the settings are saved.
+- **Load Preset** (dropdown left of the button, newest files first) —
+  applies the preset's settings, **rebuilds the building** (the current
+  `Building` is replaced) and puts the manual edits back in the same slots.
+  Before loading it checks that the preset's library exists and contains the
+  style - if not you get an error and your settings stay untouched. A module
+  no longer present in the library falls back to the style's default one.
+- **Open Preset Folder** — opens the presets folder in the OS file browser.
+- **Folder** — where presets are saved to and read from. Empty means a
+  `ProcBuilder/presets` folder inside Blender's config directory (on Windows:
+  `%APPDATA%\Blender Foundation\Blender\<version>\config\ProcBuilder\presets`),
+  which survives add-on updates. You can point it elsewhere - e.g. your
+  project folder, so presets live next to the rest of your files.
+
+A preset stores the **library path exactly as it was set** - if the files
+moved to another drive, edit the path in the `.json` itself, or in the
+**Library** field before saving.
 
 ---
 

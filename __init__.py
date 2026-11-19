@@ -3,11 +3,12 @@ from . import library
 from . import generator
 from . import swap
 from . import export
+from . import presets
 from . import authoring
 from . import tools
 from . import ui
 
-modules = (properties, library, generator, swap, export, authoring, tools, ui)
+modules = (properties, library, generator, swap, export, presets, authoring, tools, ui)
 
 
 def register():

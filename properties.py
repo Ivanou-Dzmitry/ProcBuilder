@@ -37,6 +37,12 @@ def get_balcony_style_items(self, context):
     return items or [('NONE', 'No balcony modules', '')]
 
 
+def get_preset_items(self, context):
+    from . import presets
+
+    return presets.list_presets(context)
+
+
 class PB_SceneProperties(bpy.types.PropertyGroup):
     library_path: bpy.props.StringProperty(
         name="Library",
@@ -129,6 +135,18 @@ class PB_SceneProperties(bpy.types.PropertyGroup):
         name="Name",
         description="Filename (without extension) for the exported FBX",
         default="building_export",
+    )
+    preset_dir: bpy.props.StringProperty(
+        name="Folder",
+        description="Where presets are saved and loaded from. Leave empty to use "
+                    "ProcBuilder/presets inside Blender's own config folder",
+        subtype='DIR_PATH',
+        default="",
+    )
+    preset_file: bpy.props.EnumProperty(
+        name="Preset",
+        description="Saved preset to load",
+        items=get_preset_items,
     )
     export_dir: bpy.props.StringProperty(
         name="Folder",

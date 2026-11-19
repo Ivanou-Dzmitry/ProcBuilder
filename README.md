@@ -339,6 +339,27 @@ volumes, so the point-in-mesh test was unreliable on real building geometry
 was found in reasonable time, so the feature was dropped rather than kept
 in a flaky state.
 
+## Presets: rebuild a building you assembled
+
+The **Presets** section (bottom of the panel, collapsed by default) saves
+and restores a whole building:
+
+- **Save Preset** writes `<style>_<L>x<W>x<F>_v001.json` (e.g.
+  `t01_3x23x6_v001.json`; saving again never overwrites - `_v002`, ...)
+  holding every Generate setting plus the building's manual edits (swapped
+  wall/roof-tile modules and balconies, keyed by the same stable
+  floor+side+position slots Regenerate uses; slots still on their style's
+  default module are omitted). The *Saves as* label shows the next name.
+- **Load Preset** applies the settings and runs Generate with those saved
+  edits injected in place of the ones read off the current building (the
+  current `Building` is replaced). The library/style are checked first, so a
+  bad preset is refused before any setting changes. A module missing from the
+  library falls back to the style's default.
+- **Open Preset Folder** opens the folder; **Folder** overrides it. Empty
+  means `ProcBuilder/presets` in Blender's config directory
+  (`%APPDATA%\Blender Foundation\Blender\<version>\config\...` on Windows),
+  which survives add-on updates. The library path is stored as set.
+
 ## Known v1 limitations
 
 - No floor slabs between stories — only walls, an optional roof cap, and an

@@ -432,6 +432,22 @@ def _snapshot_building_state():
     return wall_swaps, roof_swaps, balcony_snapshots
 
 
+# Manual edits (swaps, balconies) the NEXT Generate should restore instead of reading them off
+# the building currently in the scene - how Load Preset rebuilds a saved building. Set and
+# cleared around a single generate call by presets.py, never left set between calls.
+_PENDING_STATE = None
+
+
+def set_pending_state(wall_swaps, roof_swaps, balcony_snapshots):
+    global _PENDING_STATE
+    _PENDING_STATE = (wall_swaps, roof_swaps, balcony_snapshots)
+
+
+def clear_pending_state():
+    global _PENDING_STATE
+    _PENDING_STATE = None
+
+
 def _resolve_collection(library_module, filepath, default_collection, saved_name):
     """Re-use a previously-swapped module for this slot if it can still be found, else fall
     back to the style's default module for that band."""
@@ -479,7 +495,10 @@ class PB_OT_generate_building(bpy.types.Operator):
         previous_tris = previous_root.get('pb_last_tris') if previous_root else None
         previous_verts = previous_root.get('pb_last_verts') if previous_root else None
 
-        wall_swaps, roof_swaps, balcony_snapshots = _snapshot_building_state()
+        if _PENDING_STATE is not None:
+            wall_swaps, roof_swaps, balcony_snapshots = _PENDING_STATE
+        else:
+            wall_swaps, roof_swaps, balcony_snapshots = _snapshot_building_state()
         _clear_existing_building()
 
         building_collection = bpy.data.collections.new(BUILDING_COLLECTION_NAME)
